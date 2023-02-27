@@ -1,3 +1,7 @@
+/*
+Project: Create database and user for Vireo instance.
+*/
+
 ssh admin_user@my_server_address
 Enter passphrase for key '/home_unix/admin_user/.ssh/id_rsa':
 
