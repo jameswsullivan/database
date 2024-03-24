@@ -1,5 +1,7 @@
 -- Common commands:
 \l
+\l+
+\x
 \du
 \dt
 \ds
@@ -21,10 +23,11 @@ DROP DATABASE database_name;
 psql database_name < dump_file.sql
 pg_dump database_name > dump_file.sql
 
--- Find postgres config files.
+-- Find postgres config files and max connections allowed.
 SHOW config_file;
 SHOW hba_file;
 pg_ctl reload
+SHOW MAX_CONNECTIONS;
 
 -- Alter roles and privileges:
 ALTER ROLE user_name RENAME TO new_user_name;
@@ -111,3 +114,14 @@ WHERE nspname = 'public' AND relhasoids = true;
 -- Disable/enable OIDS:
 ALTER TABLE <tablename> SET WITHOUT OIDS;
 ALTER TABLE <tablename> SET WITH OIDS;
+
+-- View active/idle database connections:
+SELECT * FROM pg_stat_activity WHERE state = 'idle' AND datname = '<database_name>';
+SELECT * FROM pg_stat_activity WHERE state = 'active' AND datname = '<database_name>';
+
+SELECT
+    datname,
+    client_hostname,
+    query 
+FROM pg_stat_activity 
+WHERE state = 'idle' AND datname = '<database_name>';
