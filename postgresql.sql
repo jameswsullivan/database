@@ -129,6 +129,7 @@ SELECT * FROM pg_extension;
 SELECT * FROM pg_extension WHERE extname = 'pgcrypto';
 
 -- View active/idle database connections:
+SELECT * FROM pg_stat_activity WHERE datname = '<DATABASE_NAME>';
 SELECT * FROM pg_stat_activity WHERE state = 'idle' AND datname = '<DATABASE_NAME>';
 SELECT * FROM pg_stat_activity WHERE state = 'active' AND datname = '<DATABASE_NAME>';
 
