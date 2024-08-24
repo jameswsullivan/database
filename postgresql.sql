@@ -133,12 +133,41 @@ SELECT * FROM pg_stat_activity WHERE datname = '<DATABASE_NAME>';
 SELECT * FROM pg_stat_activity WHERE state = 'idle' AND datname = '<DATABASE_NAME>';
 SELECT * FROM pg_stat_activity WHERE state = 'active' AND datname = '<DATABASE_NAME>';
 
+-- v1
 SELECT
     datname,
     client_hostname,
     query 
 FROM pg_stat_activity 
 WHERE state = 'idle' AND datname = '<DATABASE_NAME>';
+
+-- v2
+SELECT
+    pid,
+    usename AS username,
+    datname AS database_name,
+    client_addr AS client_address,
+    application_name,
+    backend_start,
+    state,
+    query
+FROM
+    pg_stat_activity;
+
+-- v3
+SELECT
+    count(*) AS total_connections,
+    state,
+    usename AS username,
+    client_addr AS client_address
+FROM
+    pg_stat_activity
+GROUP BY
+    state,
+    usename,
+    client_addr
+ORDER BY
+    total_connections DESC;
 
 -- Rename databases:
 ALTER DATABASE <old_db_name> RENAME TO <new_db_name>;
