@@ -132,6 +132,7 @@ SELECT * FROM pg_extension WHERE extname = 'pgcrypto';
 SELECT * FROM pg_stat_activity WHERE datname = '<DATABASE_NAME>';
 SELECT * FROM pg_stat_activity WHERE state = 'idle' AND datname = '<DATABASE_NAME>';
 SELECT * FROM pg_stat_activity WHERE state = 'active' AND datname = '<DATABASE_NAME>';
+SELECT count(*) AS total_connections FROM pg_stat_activity;
 
 -- v1
 SELECT
