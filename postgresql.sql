@@ -1,22 +1,56 @@
 -- Common commands:
-\l
-\l+
-\x
-\du
-\dt
-\ds
-\c
-\q
-
+\l   -- List databases
+\l+  -- List databases, extended/detailed view
+\x   -- Expand/narrow table list
+\du  -- Display users/roles
+\dt  -- Display tables
+\ds  -- List available sequences
+\q   -- Quite psql
+\c <database_name>   -- Connect to a database
+  
 -- Making database connections:
 psql -U <USERNAME> -h <DATABASE_HOST> -p <PORT> -W -d <DATABASE_NAME>
 pg_dump -U <USERNAME> -h <DATABASE_HOST> -p <PORT> -d <DATABASE_NAME> -f OUTPUT_FILE.sql
 
+-- Import/export a database:
+psql <DATABASE_NAME> < INPUT_FILE.sql
+pg_dump <DATABASE_NAME> > OUTPUT_FILE.sql
+PGPASSWORD=<PASSWORD> psql -U <USERNAME> -h <DATABASE_HOST> -d <DATABASE_NAME> < INPUT_FILE.sql
+  
 -- Create/drop database/roles.
 CREATE ROLE <ROLE_NAME> WITH LOGIN SUPERUSER PASSWORD '<PASSWORD>' CONNECTION LIMIT -1;
 CREATE ROLE <ROLE_NAME> WITH LOGIN PASSWORD '<PASSWORD>' CONNECTION LIMIT -1;
 CREATE DATABASE <DATABASE_NAME> WITH OWNER = <ROLE_NAME> ENCODING = 'UTF8' CONNECTION LIMIT = -1;
 DROP DATABASE <DATABASE_NAME>;
+
+-- Rename databases:
+ALTER DATABASE <old_db_name> RENAME TO <new_db_name>;
+
+-- SELECT :
+-- SELECT with CONCAT :
+SELECT CONCAT(<COL1>, <STRING1>, <COL2>) AS <ALIAS_1>
+FROM <TABLE_NAME>;
+
+-- TRIM and LOWER :
+SELECT LOWER(TRIM(email)) AS lower_case_email
+FROM users;
+
+-- Save data to CSV file :
+COPY (SELECT your_columns FROM your_table) 
+TO '/path/to/your/file.csv' 
+WITH CSV HEADER;
+
+-- Create table :
+CREATE TABLE <TABLE_NAME> (
+    col1    integer PRIMARY KEY,
+    col2    varchar(40)
+);
+
+-- Insert data :
+INSERT INTO <TABLE_NAME> VALUES (1, 'something');
+
+INSERT INTO <TABLE_NAME> (col1, col2, ...)
+VALUES (val1, val2, ...);
 
 -- Update:
 UPDATE <TABLE_NAME>
@@ -34,11 +68,6 @@ SET <COL1> = CASE
               ELSE <DEFAULT_VALUE>
             END
 WHERE <CONDITION>;
-
--- Import/export a database:
-psql <DATABASE_NAME> < dump_file.sql
-pg_dump <DATABASE_NAME> > dump_file.sql
-
 
 -- View and alter roles and privileges:
 ALTER ROLE <USERNAME> RENAME TO <NEW_USERNAME>;
@@ -169,9 +198,6 @@ GROUP BY
     client_addr
 ORDER BY
     total_connections DESC;
-
--- Rename databases:
-ALTER DATABASE <old_db_name> RENAME TO <new_db_name>;
 
 -- Terminate connections to a database from the server side:
 SELECT  pg_terminate_backend(pid)
