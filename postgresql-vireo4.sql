@@ -215,52 +215,43 @@ ORDER BY submission.id ASC;
 
 -- By date, limit to a particular graduation semester, and display students' email and permanent email columns,
 -- and display advisor's email :
-COPY
-(SELECT
-    student_name AS "Student name",
-    student_id AS "Student ID",
-    college AS "College",
-    last_event AS "Last Event",
-    submission_type_table.value AS "Document Type",
-    student_email AS "Student Email",
-    permanent_email AS "Permanent Email",
-    advisor_name AS "Advisor Name",
-    advisor_email AS "Advisor Email"
-FROM
-(SELECT
-    MAX(graduation_semester_table.value) AS "graduation_semester",
-    submission.id AS "submission_id",
-    MAX(CONCAT(weaver_users.last_name, ', ', weaver_users.first_name)) AS "student_name",
-    MAX(weaver_users.netid) AS "student_id",
-    MAX(college_table.value) AS "college",
-    MAX(action_log.action_date) AS "last_event_timestamp",
-    MAX(action_log.entry) AS "last_event",
-    MAX(weaver_users.email) AS "student_email",
-    MAX(permanent_email_table.value) AS "permanent_email",
-    MAX(vocabulary_word.name) AS "advisor_name",
-    MAX(vocabulary_word_contacts.contacts) AS "advisor_email"
+WITH vars AS (
+    SELECT
+        '<GRADUATION_SEMESTER>'::TEXT AS GRADUATION_SEMESTER,
+        '<STARTING_DATE>'::DATE AS STARTING_DATE,
+        '<ENDING_DATE>'::DATE AS ENDING_DATE
+)
+SELECT
+    submission.id AS "Submission ID",
+    MAX(graduation_semester_table.value) AS "Graduation Semester",
+    MAX(CONCAT(weaver_users.last_name, ', ', weaver_users.first_name)) AS "Student Name",
+    MAX(weaver_users.netid) AS "Student ID",
+    MAX(college_table.value) AS "College",
+    MAX(action_log.action_date) AS "Last Event Timestamp",
+    MAX(action_log.entry) AS "Last Event",
+    MAX(weaver_users.email) AS "Student Email",
+    MAX(permanent_email_table.value) AS "Permanent Email",
+    MAX(vocabulary_word.name) AS "Advisor Name",
+    MAX(vocabulary_word_contacts.contacts) AS "Advisor Email"
 FROM submission
 LEFT JOIN weaver_users ON submission.submitter_id = weaver_users.id
-LEFT JOIN submission_field_values ON submission.id = submission_field_values.submission_id
-LEFT JOIN field_value college_table ON submission_field_values.field_values_id = college_table.id AND college_table.field_predicate_id = 17
-LEFT JOIN field_value graduation_semester_table ON submission_field_values.field_values_id = graduation_semester_table.id AND graduation_semester_table.field_predicate_id = 30 AND graduation_semester_table.value = '<GRADUATION_SEMESTER>'
-LEFT JOIN field_value permanent_email_table ON submission_field_values.field_values_id = permanent_email_table.id AND permanent_email_table.field_predicate_id = 24
-LEFT JOIN field_value advisor_table ON submission_field_values.field_values_id = advisor_table.id AND advisor_table.field_predicate_id = 37
+LEFT JOIN submission_field_values college_sfv ON submission.id = college_sfv.submission_id
+LEFT JOIN field_value college_table ON college_sfv.field_values_id = college_table.id AND college_table.field_predicate_id = 17
+LEFT JOIN submission_field_values graduation_semester_sfv ON submission.id = graduation_semester_sfv.submission_id
+LEFT JOIN field_value graduation_semester_table ON graduation_semester_sfv.field_values_id = graduation_semester_table.id AND graduation_semester_table.field_predicate_id = 30
+LEFT JOIN submission_field_values permanent_email_sfv ON submission.id = permanent_email_sfv.submission_id
+LEFT JOIN field_value permanent_email_table ON permanent_email_sfv.field_values_id = permanent_email_table.id AND permanent_email_table.field_predicate_id = 24
+LEFT JOIN submission_field_values advisor_sfv ON submission.id = advisor_sfv.submission_id
+LEFT JOIN field_value advisor_table ON advisor_sfv.field_values_id = advisor_table.id AND advisor_table.field_predicate_id = 37
+LEFT JOIN submission_field_values submission_type_sfv ON submission.id = submission_type_sfv.submission_id
+LEFT JOIN field_value submission_type_table ON submission_type_sfv.field_values_id = submission_type_table.id AND submission_type_table.field_predicate_id = 32
 LEFT JOIN vocabulary_word ON advisor_table.value = vocabulary_word.name
 LEFT JOIN vocabulary_word_contacts ON vocabulary_word.id = vocabulary_word_contacts.vocabulary_word_id AND vocabulary_word.controlled_vocabulary_id = 10
 LEFT JOIN action_log ON submission.last_action_id = action_log.id
-WHERE
-    submission.submission_date >= '<STARTING_DATE>' AND
-    submission.submission_date <= '<ENDING_DATE>'
+JOIN vars ON submission.submission_date BETWEEN vars.STARTING_DATE AND vars.ENDING_DATE
+WHERE graduation_semester_table.value = vars.GRADUATION_SEMESTER
 GROUP BY submission.id
-ORDER BY submission_id DESC) AS first_table
-LEFT JOIN submission_field_values ON first_table.submission_id = submission_field_values.submission_id
-LEFT JOIN field_value submission_type_table ON submission_field_values.field_values_id = submission_type_table.id
-WHERE
-    submission_type_table.field_predicate_id = 32 AND
-    first_table.graduation_semester = '<GRADUATION_SEMESTER>')
-TO '<DESTINATION_FILE_NAME>.csv'
-WITH CSV HEADER;
+ORDER BY submission.id ASC;
 
 -- By submission ID :
 COPY
