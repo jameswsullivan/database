@@ -1,74 +1,59 @@
 -- Vireo 4 troubleshooting and reporting SQLs.
 -- https://github.com/TexasDigitalLibrary/Vireo
 
--- Export submissions from a given department, between a date range.
--- Columns: Last Name, First Name, Title, Abstract, Submission Date
-COPY
-(SELECT
-    title_table.last_name AS "Last Name",
-    title_table.first_name AS "First Name",
-    title_table.submission_title AS "Title",
-    field_value.value AS "Abstract",
-    title_table.submission_date AS "Submission Date"
-FROM
-(SELECT
-    dept_table.last_name AS "last_name",
-    dept_table.first_name AS "first_name",
-    dept_table.submission_dept AS "submission_dept",
-    dept_table.submission_date AS "submission_date",
-    dept_table.submission_id AS "submission_id",
-    field_value.value AS "submission_title"
-FROM
-(SELECT
-    last_name,
-    first_name,
-    field_value.value AS "submission_dept",
-    submission_date,
-    submission.id AS "submission_id"
+-- List all field_predicate:
+SELECT * FROM field_predicate WHERE value != '' ORDER BY id ASC;
+
+-- Find submissions from a given department, between a date range.
+WITH vars AS (
+    SELECT
+        '<DEPARTMENT_NAME>'::TEXT AS DEPARTMENT_NAME,
+        '<STARTING_DATE>'::DATE AS STARTING_DATE,
+        '<ENDING_DATE>'::DATE AS ENDING_DATE
+)
+SELECT
+    submission.id AS "Submission ID",
+    MAX(weaver_users.last_name) AS "Last Name",
+    MAX(weaver_users.first_name) AS "First Name",
+    MAX(title_table.value) AS "Title",
+    MAX(abstract_table.value) AS "Abstract",
+    MAX(submission.submission_date) AS "Submission Date"
 FROM weaver_users
 LEFT JOIN submission ON submission.submitter_id = weaver_users.id
-LEFT JOIN submission_field_values ON submission.id = submission_field_values.submission_id
-LEFT JOIN field_value ON submission_field_values.field_values_id = field_value.id
+LEFT JOIN submission_field_values dept_sfv ON submission.id = dept_sfv.submission_id
+LEFT JOIN field_value dept_table ON dept_sfv.field_values_id = dept_table.id AND dept_table.field_predicate_id = 19
+LEFT JOIN submission_field_values title_sfv ON submission.id = title_sfv.submission_id
+LEFT JOIN field_value title_table ON title_sfv.field_values_id = title_table.id AND title_table.field_predicate_id = 29
+LEFT JOIN submission_field_values abstract_sfv ON submission.id = abstract_sfv.submission_id
+LEFT JOIN field_value abstract_table ON abstract_sfv.field_values_id = abstract_table.id AND abstract_table.field_predicate_id = 33
+JOIN vars ON dept_table.value = vars.DEPARTMENT_NAME
 WHERE
-    field_value.field_predicate_id = 19 AND
-    field_value.value = '<DEPARTMENT>' AND
-    submission.submission_date >= '<STARTING_DATE>' AND
-    submission.submission_date <= '<ENDING_DATE>') dept_table
-LEFT JOIN submission_field_values ON dept_table.submission_id = submission_field_values.submission_id
-LEFT JOIN field_value ON submission_field_values.field_values_id = field_value.id
-WHERE field_value.field_predicate_id = 29) title_table
-LEFT JOIN submission_field_values ON title_table.submission_id = submission_field_values.submission_id
-LEFT JOIN field_value ON submission_field_values.field_values_id = field_value.id
-WHERE field_value.field_predicate_id = 33)
-TO '<DESTINATION_FILE_PATH.CSV>'
-WITH CSV HEADER;
+    dept_table.value = vars.DEPARTMENT_NAME AND
+    submission.submission_date >= vars.STARTING_DATE AND
+    submission.submission_date <= vars.ENDING_DATE
+GROUP BY submission.id
+ORDER BY submission.id ASC;
 
 -- List submissions from a given major.
--- Columns: Last Name, First Name, Major, Submission Date, Submission ID, Submission Title
+WITH vars AS (
+    SELECT '<MAJOR>'::TEXT AS MAJOR
+)
 SELECT
-    major_table.last_name AS "last_name",
-    major_table.first_name AS "first_name",
-    major_table.submission_major AS "submission_major",
-    major_table.submission_date AS "submission_date",
-    major_table.submission_id AS "submission_id",
-    field_value.value AS "submission_title"
-FROM
-(SELECT
-    last_name,
-    first_name,
-    field_value.value AS "submission_major",
-    submission_date,
-    submission.id AS "submission_id"
+    submission.id AS "Submission ID",
+    MAX(weaver_users.last_name) AS "Last Name",
+    MAX(weaver_users.first_name) AS "First Name",
+    MAX(major_table.value) AS "Major",
+    MAX(submission.submission_date) AS "Submission Date",
+    MAX(title_table.value) AS "Title"
 FROM weaver_users
 LEFT JOIN submission ON submission.submitter_id = weaver_users.id
-LEFT JOIN submission_field_values ON submission.id = submission_field_values.submission_id
-LEFT JOIN field_value ON submission_field_values.field_values_id = field_value.id
-WHERE
-    field_value.field_predicate_id = 21 AND
-    field_value.value = '<MAJOR>') major_table
-LEFT JOIN submission_field_values ON major_table.submission_id = submission_field_values.submission_id
-LEFT JOIN field_value ON submission_field_values.field_values_id = field_value.id
-WHERE field_value.field_predicate_id = 29;
+LEFT JOIN submission_field_values major_sfv ON submission.id = major_sfv.submission_id
+LEFT JOIN field_value major_table ON major_sfv.field_values_id = major_table.id AND major_table.field_predicate_id = 21
+LEFT JOIN submission_field_values title_sfv ON submission.id = title_sfv.submission_id
+LEFT JOIN field_value title_table ON title_sfv.field_values_id = title_table.id AND title_table.field_predicate_id = 29
+JOIN vars ON major_table.value = vars.MAJOR
+GROUP BY submission.id
+ORDER BY submission.id ASC;
 
 -- Select all field values associated with a submisison
 -- without Title and Abstract because the texts are too long
@@ -176,72 +161,57 @@ WHERE submission.id = <SUBMISSION_ID>;
 
 -- Export submissions by Document Type:
 -- By date :
-COPY
-(SELECT
-    student_name AS "Student name",
-    student_id AS "Student ID",
-    college AS "College",
-    last_event AS "Last Event",
-    submission_type_table.value AS "Document Type"
-FROM
-(SELECT
-    submission.id AS "submission_id",
-    CONCAT(weaver_users.last_name, ', ', weaver_users.first_name) AS "student_name",
-    weaver_users.netid AS "student_id",
-    college_table.value AS "college",
-    action_log.action_date AS "last_event_timestamp",
-    action_log.entry AS "last_event"
+WITH vars AS (
+    SELECT
+        '<STARTING_DATE>'::DATE AS STARTING_DATE,
+        '<ENDING_DATE>'::DATE AS ENDING_DATE
+)
+SELECT
+    submission.id AS "Submission ID",
+    MAX(CONCAT(weaver_users.last_name, ', ', weaver_users.first_name)) AS "Student Name",
+    MAX(weaver_users.netid) AS "Student ID",
+    MAX(college_table.value) AS "College",
+    MAX(action_log.action_date) AS "Last Event Timestamp",
+    MAX(action_log.entry) AS "Last Event"
 FROM submission
 LEFT JOIN weaver_users ON submission.submitter_id = weaver_users.id
-LEFT JOIN submission_field_values ON submission.id = submission_field_values.submission_id
-LEFT JOIN field_value college_table ON submission_field_values.field_values_id = college_table.id
+LEFT JOIN submission_field_values college_sfv ON submission.id = college_sfv.submission_id
+LEFT JOIN field_value college_table ON college_sfv.field_values_id = college_table.id AND college_table.field_predicate_id = 17
+LEFT JOIN submission_field_values submission_type_sfv ON submission.id = submission_type_sfv.submission_id
+LEFT JOIN field_value submission_type_table ON submission_type_sfv.field_values_id = submission_type_table.id AND submission_type_table.field_predicate_id = 32
 LEFT JOIN action_log ON submission.last_action_id = action_log.id
-WHERE
-    submission.submission_date >= '<STARTING_DATE>' AND
-    submission.submission_date <= '<ENDING_DATE>' AND
-    college_table.field_predicate_id = 17
-ORDER BY submission_id DESC) AS first_table
-LEFT JOIN submission_field_values ON first_table.submission_id = submission_field_values.submission_id
-LEFT JOIN field_value submission_type_table ON submission_field_values.field_values_id = submission_type_table.id
-WHERE submission_type_table.field_predicate_id = 32)
-TO '<DESTINATION_FILE_NAME>.csv'
-WITH CSV HEADER;
+JOIN vars ON submission.submission_date BETWEEN vars.STARTING_DATE AND vars.ENDING_DATE
+GROUP BY submission.id
+ORDER BY submission.id ASC;
 
 -- By date and limit to a graduation semester :
-COPY
-(SELECT
-    student_name AS "Student name",
-    student_id AS "Student ID",
-    college AS "College",
-    last_event AS "Last Event",
-    submission_type_table.value AS "Document Type"
-FROM
-(SELECT
-    MAX(graduation_semester_table.value) AS "graduation_semester",
-    submission.id AS "submission_id",
-    MAX(CONCAT(weaver_users.last_name, ', ', weaver_users.first_name)) AS "student_name",
-    MAX(weaver_users.netid) AS "student_id",
-    MAX(college_table.value) AS "college",
-    MAX(action_log.action_date) AS "last_event_timestamp",
-    MAX(action_log.entry) AS "last_event"
+WITH vars AS (
+    SELECT
+        '<GRADUATION_SEMESTER>'::TEXT AS GRADUATION_SEMESTER,
+        '<STARTING_DATE>'::DATE AS STARTING_DATE,
+        '<ENDING_DATE>'::DATE AS ENDING_DATE
+)
+SELECT
+    submission.id AS "Submission ID",
+    MAX(graduation_semester_table.value) AS "Graduation Semester",
+    MAX(CONCAT(weaver_users.last_name, ', ', weaver_users.first_name)) AS "Student Name",
+    MAX(weaver_users.netid) AS "Student ID",
+    MAX(college_table.value) AS "College",
+    MAX(action_log.action_date) AS "Last Event Timestamp",
+    MAX(action_log.entry) AS "Last Event"
 FROM submission
 LEFT JOIN weaver_users ON submission.submitter_id = weaver_users.id
-LEFT JOIN submission_field_values ON submission.id = submission_field_values.submission_id
-LEFT JOIN field_value college_table ON submission_field_values.field_values_id = college_table.id AND college_table.field_predicate_id = 17
-LEFT JOIN field_value graduation_semester_table ON submission_field_values.field_values_id = graduation_semester_table.id AND graduation_semester_table.field_predicate_id = 30 AND graduation_semester_table.value = '<GRADUATION_SEMESTER>'
+LEFT JOIN submission_field_values college_sfv ON submission.id = college_sfv.submission_id
+LEFT JOIN field_value college_table ON college_sfv.field_values_id = college_table.id AND college_table.field_predicate_id = 17
+LEFT JOIN submission_field_values graduation_semester_sfv ON submission.id = graduation_semester_sfv.submission_id
+LEFT JOIN field_value graduation_semester_table ON graduation_semester_sfv.field_values_id = graduation_semester_table.id AND graduation_semester_table.field_predicate_id = 30
+LEFT JOIN submission_field_values submission_type_sfv ON submission.id = submission_type_sfv.submission_id
+LEFT JOIN field_value submission_type_table ON submission_type_sfv.field_values_id = submission_type_table.id AND submission_type_table.field_predicate_id = 32
 LEFT JOIN action_log ON submission.last_action_id = action_log.id
-WHERE
-    submission.submission_date >= '<STARTING_DATE>' AND
-    submission.submission_date <= '<ENDING_DATE>'
+JOIN vars ON submission.submission_date BETWEEN vars.STARTING_DATE AND vars.ENDING_DATE
+WHERE graduation_semester_table.value = vars.GRADUATION_SEMESTER
 GROUP BY submission.id
-ORDER BY submission_id DESC) AS first_table
-LEFT JOIN submission_field_values ON first_table.submission_id = submission_field_values.submission_id
-LEFT JOIN field_value submission_type_table ON submission_field_values.field_values_id = submission_type_table.id
-WHERE
-    submission_type_table.field_predicate_id = 32 AND
-    first_table.graduation_semester = '<GRADUATION_SEMESTER>')
-TO '<DESTINATION_FILE_NAME>.csv'
-WITH CSV HEADER;
+ORDER BY submission.id ASC;
 
 -- By date, limit to a particular graduation semester, and display students' email and permanent email columns,
 -- and display advisor's email :
