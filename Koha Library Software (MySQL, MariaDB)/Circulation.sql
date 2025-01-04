@@ -102,3 +102,16 @@ WHERE
 	AND (issues.date_due >= <<Due date greater than or equal to |date>>	)
 	AND borrowers.city IN ('PARADISE', 'MAGALIA')
 ORDER BY borrowers.surname, issues.date_due ASC
+
+-- Account fines troubleshooting
+SELECT
+	CONCAT(borrowers.surname, ', ', borrowers.firstname) AS 'Patron',
+	borrowers.cardnumber AS 'Cardnumber',
+	borrowers.dateexpiry AS "Acct Expired on",
+	accountlines.amountoutstanding AS 'Fine'
+FROM borrowers
+INNER JOIN accountlines USING (borrowernumber)
+WHERE
+    datediff( <<Expired on or before|date>>, borrowers.dateexpiry ) >= 0
+ORDER BY
+	borrowers.surname ASC
