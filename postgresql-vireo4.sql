@@ -4,6 +4,40 @@
 -- List all field_predicate:
 SELECT * FROM field_predicate WHERE value != '' ORDER BY id ASC;
 
+-- Find saved filters and their names and ID:
+SELECT name, id, user_id FROM named_search_filter_group WHERE name != '';
+
+-- Show all saved filters and their associated user ID:
+SELECT * FROM weaver_users_saved_filters;
+
+SELECT
+    name AS "Saved Filter Name",
+    id AS "Saved Filter ID",
+    user_id AS "User ID"
+FROM named_search_filter_group
+WHERE name != '';
+
+-- Find a user's saved filters id:
+SELECT first_name, last_name, username, id, saved_filters_id
+FROM weaver_users
+LEFT JOIN weaver_users_saved_filters ON weaver_users.id = weaver_users_saved_filters.user_id
+WHERE weaver_users.username = '<USERNAME/EMAIL>';
+
+-- Find users' saved filters:
+SELECT
+    weaver_users.first_name,
+    weaver_users.last_name,
+    weaver_users.username,
+    weaver_users.id AS "user_id",
+    weaver_users_saved_filters.saved_filters_id,
+    named_search_filter_group.name
+FROM weaver_users
+LEFT JOIN weaver_users_saved_filters ON weaver_users.id = weaver_users_saved_filters.user_id
+LEFT JOIN named_search_filter_group ON weaver_users_saved_filters.saved_filters_id = named_search_filter_group.id
+WHERE
+    weaver_users.username = '<USERNAME/EMAIL>'
+    AND named_search_filter_group.name != '';
+
 -- Find submissions from a given department, between a date range.
 WITH vars AS (
     SELECT
