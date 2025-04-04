@@ -104,9 +104,6 @@ SELECT
 FROM submission
 LEFT JOIN weaver_users submitter ON submission.submitter_id = submitter.id
 LEFT JOIN weaver_users assignee ON submission.assignee_id = assignee.id
-LEFT JOIN organization ON submission.organization_id = organization.id
-LEFT JOIN organization_category ON organization.category_id = organization_category.id
-LEFT JOIN submission_status ON submission.submission_status_id = submission_status.id
 LEFT JOIN submission_field_values ON submission.id = submission_field_values.submission_id
 LEFT JOIN field_value ON submission_field_values.field_values_id = field_value.id
 LEFT JOIN field_predicate ON field_predicate.id = field_value.field_predicate_id
@@ -129,9 +126,6 @@ SELECT
 FROM submission
 LEFT JOIN weaver_users submitter ON submission.submitter_id = submitter.id
 LEFT JOIN weaver_users assignee ON submission.assignee_id = assignee.id
-LEFT JOIN organization ON submission.organization_id = organization.id
-LEFT JOIN organization_category ON organization.category_id = organization_category.id
-LEFT JOIN submission_status ON submission.submission_status_id = submission_status.id
 LEFT JOIN submission_field_values ON submission.id = submission_field_values.submission_id
 LEFT JOIN field_value ON submission_field_values.field_values_id = field_value.id
 LEFT JOIN field_predicate ON field_predicate.id = field_value.field_predicate_id
@@ -189,8 +183,6 @@ SELECT
 FROM submission
 LEFT JOIN weaver_users submitter ON submission.submitter_id = submitter.id
 LEFT JOIN weaver_users assignee ON submission.assignee_id = assignee.id
-LEFT JOIN organization ON submission.organization_id = organization.id
-LEFT JOIN submission_status ON submission.submission_status_id = submission_status.id
 WHERE submission.id = <SUBMISSION_ID>;
 
 -- Export submissions by Document Type:
