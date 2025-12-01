@@ -15,6 +15,7 @@ pg_dump -U <USERNAME> -h <DATABASE_HOST> -p <PORT> -d <DATABASE_NAME> -f OUTPUT_
 -- Import/export a database:
 psql <DATABASE_NAME> < INPUT_FILE.sql
 pg_dump <DATABASE_NAME> > OUTPUT_FILE.sql
+pg_restore -d <DATABASE_NAME> <PATH_TO_DUMP_FILE, e.g. mydb.dump>
 PGPASSWORD=<PASSWORD> psql -U <USERNAME> -h <DATABASE_HOST> -d <DATABASE_NAME> < INPUT_FILE.sql
   
 -- Create/drop database/roles.
