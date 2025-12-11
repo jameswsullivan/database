@@ -12,6 +12,7 @@ CREATE DATABASE <database-name>;
 DROP DATABASE <database-name>;
 
 CREATE USER 'username'@'host' IDENTIFIED BY 'password';
+CREATE USER 'newuser'@'%' IDENTIFIED BY 'password';
 
 GRANT ALL PRIVILEGES ON <database-name>.* TO 'username'@'host' WITH GRANT OPTION;
 
