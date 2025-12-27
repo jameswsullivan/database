@@ -5,7 +5,7 @@
 \du  -- Display users/roles
 \dt  -- Display tables
 \ds  -- List available sequences
-\q   -- Quite psql
+\q   -- Quit psql
 \c <database_name>   -- Connect to a database
   
 -- Making database connections:
